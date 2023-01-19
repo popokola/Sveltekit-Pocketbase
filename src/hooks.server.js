@@ -5,50 +5,6 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 
 
-/*
-export const handle = async ({ event, resolve }) => {
-	event.locals.pb = new PocketBase('https://pb.charlesparames.com');
-	event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
-
-	try {
-		if (event.locals.pb.authStore.isValid) {
-			await event.locals.pb.collection('users').authRefresh();
-			event.locals.user = JSON.parse(JSON.stringify(event.locals.pb.authStore.model));
-		}
-	} catch (_) {
-		event.locals.pb.authStore.clear();
-		event.locals.user = undefined;
-	}
-
-	let theme = null;
-
-	const newTheme = event.url.searchParams.get("theme");
-	const cookieTheme = event.cookies.get("colortheme");
-
-	if (newTheme) {
-		theme = newTheme;
-	} else if (cookieTheme) {
-		theme = cookieTheme;
-	}
-
-	
-	if(theme){
-		return await resolve(event, {
-			transformPageChunk: ({ html }) =>
-				html.replace('data-theme=""', `data-theme="${theme}"`),
-		});
-	}
-
-	const response = await resolve(event);
-
-	response.headers.set('set-cookie', event.locals.pb.authStore.exportToCookie({ secure: false }));
-
-	return response;
-};
-*/
-
-
-
 export const pocketbase = async ({ event, resolve }) => {
 	event.locals.pb = new PocketBase('https://pb.charlesparames.com');
 	event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
@@ -62,19 +18,8 @@ export const pocketbase = async ({ event, resolve }) => {
 		event.locals.pb.authStore.clear();
 		event.locals.user = undefined;
 	}
-	
-	console.log("Cookietheme", event.cookies.get("colortheme"));
 
-	const response = await resolve(event);
-
-	response.headers.set('set-cookie', event.locals.pb.authStore.exportToCookie({ secure: false }));
-
-	return response;
-};
-
-
-const themeSetter = async ( { event, resolve })=>{
-	let theme = null;
+	let theme = "";
 
 	const newTheme = event.url.searchParams.get("theme");
 	const cookieTheme = event.cookies.get("colortheme");
@@ -84,17 +29,20 @@ const themeSetter = async ( { event, resolve })=>{
 	} else if (cookieTheme) {
 		theme = cookieTheme;
 	}
-
-	if(!theme){
-		return await resolve(event);
-	}
 	
-	console.log("theme", theme);
-	return await resolve(event, {
+	console.log("Cookietheme", theme);
+
+	const response = await resolve(event, {
 		transformPageChunk: ({ html }) =>
 			html.replace('data-theme=""', `data-theme="${theme}"`),
 	});
-}
+
+	response.headers.append('set-cookie', event.locals.pb.authStore.exportToCookie({ secure: true }));
+
+	return response;
+};
+
+
 
 const rateLimiter = async ({ event, resolve }) => {
 
@@ -105,8 +53,6 @@ const rateLimiter = async ({ event, resolve }) => {
 	});
 
 	event.locals.redis = redis;
-
-	console.log("event", event.request);
 
 	const ratelimit = new Ratelimit({
 		redis: redis,
@@ -136,4 +82,4 @@ const rateLimiter = async ({ event, resolve }) => {
 }
 
 
-export const handle = sequence(themeSetter,pocketbase, rateLimiter);
+export const handle = sequence(rateLimiter, pocketbase);

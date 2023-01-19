@@ -6,6 +6,7 @@ export const actions = {
 		const redirectTo = url.searchParams.get("redirectTo");
 
 		if (theme) {
+			console.log("Setting theme", theme);
 			cookies.set("colortheme", theme, {
 				path: "/",
 				maxAge: 60 * 60 * 24 * 365,
