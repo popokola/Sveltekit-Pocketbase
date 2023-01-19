@@ -101,6 +101,7 @@ const rateLimiter = async ({ event, resolve }) => {
 	const redis  = new Redis({
 		url: process.env.UPSTASH_REDIS_REST_URL,
 		token: process.env.UPSTASH_REDIS_REST_TOKEN,
+
 	});
 
 	event.locals.redis = redis;
@@ -114,7 +115,7 @@ const rateLimiter = async ({ event, resolve }) => {
 
 	const key = event.request.headers.get("x-forwarded-for") ?? "127.0.0.1" ;
 
-	if(event.url.pathname.startsWith("/login") || event.url.pathname.startsWith("/register")){
+	if(event.url.pathname.startsWith("/login") || event.url.pathname.startsWith("/register") || event.url.pathname.startsWith("/reset-password")){
 		const { remaining, reset, limit, success, pending } = await ratelimit.limit(`mw_${key}`);
 		console.log("remaining", remaining);
 
