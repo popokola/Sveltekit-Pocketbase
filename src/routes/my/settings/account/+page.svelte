@@ -1,0 +1,113 @@
+<script>
+	import { enhance, applyAction } from '$app/forms';
+    import { invalidateAll } from '$app/navigation';
+    import { Input, Modal } from '$lib/components';
+    import toast from 'svelte-french-toast';
+
+    export let form;
+    export let data;
+    let loading;
+    let emailModalOpen;
+    let usernameModalOpen;
+
+    $: emailModalOpen = false;
+    $: usernameModalOpen = false;
+    $: loading = false;
+
+    const submitUpdateEmail = () => {
+        loading = true;
+        emailModalOpen = true;
+
+        return async ({result}) => {
+            switch (result.type) {
+                case 'success':
+                    toast.success('Email updated successfully');
+                    await invalidateAll();
+                    emailModalOpen = false;
+                    break;
+                case 'error':
+                    toast.error('Something went wrong');
+                    emailModalOpen = true;
+                    break;
+
+                default:
+                    await applyAction(result);
+            }
+
+            loading = false;
+        }
+    }
+
+    const submitUpadteUsername = () => {
+        loading = true;
+        usernameModalOpen = true;
+
+        return async ({result}) => {
+            switch (result.type) {
+                case 'success':
+                    toast.success('Username updated successfully');
+                    await invalidateAll();
+                    usernameModalOpen = false;
+                    break;
+                case 'error':
+                    toast.error('Something went wrong');
+                    usernameModalOpen = true;
+                    break;
+
+                default:
+                    await applyAction(result);
+            }
+
+            loading = false;
+        }
+    }
+
+</script>
+
+
+<div class="flex flex-col w-full h-full space-y-12">
+    <div class="w-full">
+        <h3 class="text-2xl font-medium">Change Email</h3>
+        <div class="divider" />
+        <Modal label="change-email" checked={emailModalOpen} >
+            <span slot="trigger" class="btn btn-primary">Change Email</span>
+            <h3 slot="heading">Change your email</h3>
+            <form action="?/updateEmail" method="POST" class="space-y-2" use:enhance={submitUpdateEmail}>
+                <Input id="email" 
+                type="email" 
+                label="Enter your new email address" 
+                required={true} 
+                value={form?.data?.email} 
+                disabled={loading}
+                errors={form?.errors?.email}
+                />
+                <button type="submit" class="btn btn-primary w-full" disabled={loading}>Change my email</button>
+            </form>
+
+        </Modal>
+    </div>
+
+    <div class="w-full">
+        <h3 class="text-2xl font-medium">Change Username</h3>
+        <div class="divider mb-0.5" />
+        <Input id="username" label="Username" value={data?.user?.username} errors='' disabled />
+        <Modal label="change-username" checked={usernameModalOpen} >
+            <span slot="trigger" class="btn btn-primary">Change Username</span>
+            <h3 slot="heading">Change your username</h3>
+            <form action="?/updateUsername" method="POST" class="space-y-2" use:enhance={submitUpadteUsername}>
+                <Input id="username" 
+                type="text" label="Enter your new username" 
+                required={true} 
+                value={form?.data?.username} 
+                disabled={loading}
+                errors={form?.errors?.username}
+                />
+                <button type="submit" class="btn btn-primary w-full" disabled={loading}>Change my username</button>
+            </form>
+
+        </Modal>
+    </div>
+
+
+  
+</div>
