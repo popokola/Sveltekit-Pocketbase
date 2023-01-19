@@ -114,23 +114,23 @@ const rateLimiter = async ({ event, resolve }) => {
 
 	const key = event.request.headers.get("x-forwarded-for") ?? "127.0.0.1" ;
 
-	const { remaining, reset, limit, success, pending } = await ratelimit.limit(`mw_${key}`);
+	if(event.url.pathname.startsWith("/login") || event.url.pathname.startsWith("/register")){
+		const { remaining, reset, limit, success, pending } = await ratelimit.limit(`mw_${key}`);
+		console.log("remaining", remaining);
 
-	console.log("remaining", remaining);
-	
-	await pending;
+		await pending;
 
-	if (!success) {
-		return new Response("Too many requests", {
-			status: 429,
-			headers: {
-				"Retry-After": reset,
-			},
-		});
+		if (!success) {
+			return new Response("Too many requests", {
+				status: 429,
+				headers: {
+					"Retry-After": reset,
+				},
+			});
+		}
+
 	}
-
-
-
+	
 	return await resolve(event);
 }
 
