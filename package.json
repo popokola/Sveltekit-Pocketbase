@@ -36,6 +36,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@sveltejs/adapter-vercel": "^2.0.1",
 		"dotenv": "^16.0.3",
 		"pocketbase": "^0.9.1"
 	}
