@@ -1,12 +1,15 @@
 import PocketBase from 'pocketbase';
 import { sequence } from '@sveltejs/kit/hooks';
 import "dotenv/config";
-import { Redis } from "@upstash/redis";
-import { Ratelimit } from "@upstash/ratelimit";
+import { redis, ratelimit } from '$lib/redis';
 
 
 export const pocketbase = async ({ event, resolve }) => {
-	event.locals.pb = new PocketBase('https://pb.charlesparames.com');
+
+	//reuse the same instance of PocketBase for all requests
+	if(!event.locals.pb) {
+		event.locals.pb = new PocketBase('https://pb.charlesparames.com');
+	}
 	event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 
 	try {
@@ -29,15 +32,13 @@ export const pocketbase = async ({ event, resolve }) => {
 	} else if (cookieTheme) {
 		theme = cookieTheme;
 	}
-	
-	console.log("Cookietheme", theme);
 
 	const response = await resolve(event, {
 		transformPageChunk: ({ html }) =>
 			html.replace('data-theme=""', `data-theme="${theme}"`),
 	});
 
-	response.headers.append('set-cookie', event.locals.pb.authStore.exportToCookie({ secure: true }));
+	response.headers.append('set-cookie', event.locals.pb.authStore.exportToCookie({ secure: false }));
 
 	return response;
 };
@@ -46,24 +47,11 @@ export const pocketbase = async ({ event, resolve }) => {
 
 const rateLimiter = async ({ event, resolve }) => {
 
-	const redis  = new Redis({
-		url: process.env.UPSTASH_REDIS_REST_URL,
-		token: process.env.UPSTASH_REDIS_REST_TOKEN,
-
-	});
-
 	event.locals.redis = redis;
-
-	const ratelimit = new Ratelimit({
-		redis: redis,
-		limiter: Ratelimit.slidingWindow(20, "10 s"),
-	});
-
 	const key = event.request.headers.get("x-forwarded-for") ?? "127.0.0.1" ;
 
 	if(event.url.pathname.startsWith("/login") || event.url.pathname.startsWith("/register") || event.url.pathname.startsWith("/reset-password")){
 		const { remaining, reset, limit, success, pending } = await ratelimit.limit(`mw_${key}`);
-		console.log("remaining", remaining);
 
 		await pending;
 
